@@ -48,18 +48,18 @@ All numbers are on the full 200-case golden set (`reports/metrics.json`).
 
 | Tier | Intent accuracy | Intent macro-F1 | Escalation accuracy | Escalation precision (escalate class) | Escalation recall (escalate class) | Escalation F1 (escalate class) | Mean judge score (1-5) |
 |---|---|---|---|---|---|---|---|
-| trivial | 3.0% | 0.007 | 82.0% | 0.0 | 0.0 | 0.0 | n/a (constant reply) |
-| simple (keyword) | 40.5% | 0.403 | 77.0% | 0.424 | 0.778 | 0.549 | 3.43 |
-| **llm (main)** | **77.5%** | **0.704** | **85.0%** | **0.565** | **0.722** | **0.634** | **3.86** |
+| trivial | 3.0% | 0.007 | 81.5% | 0.0 | 0.0 | 0.0 | n/a (constant reply) |
+| simple (keyword) | 40.5% | 0.403 | 76.5% | 0.424 | 0.757 | 0.544 | 3.43 |
+| **llm (main)** | **77.5%** | **0.704** | **84.5%** | **0.565** | **0.703** | **0.627** | **3.86** |
 
 The main system roughly doubles the simple baseline's intent accuracy and macro-F1, and
 improves escalation F1 by ~15 points. Two numbers need immediate context, though (see
 "what's misleading" for the full list):
 
-- **Trivial's 82% escalation "accuracy" is a base-rate artifact**, not a capability: 82%
-  of the golden set is gold-labeled `auto_handle=true`, so a policy of "always
-  auto-handle, no logic at all" scores 82% while having 0 precision/recall on the
-  escalate class -- i.e. it would auto-send a reply to every one of the 36 cases (18%)
+- **Trivial's 81.5% escalation "accuracy" is a base-rate artifact**, not a capability:
+  81.5% of the golden set is gold-labeled `auto_handle=true`, so a policy of "always
+  auto-handle, no logic at all" scores 81.5% while having 0 precision/recall on the
+  escalate class -- i.e. it would auto-send a reply to every one of the 37 cases (18.5%)
   that a human said needed review, including the safety-relevant case described in
   failure mode #1 below. Escalation accuracy alone is not a safe headline metric; the
   escalate-class F1 is the number that actually matters here.
@@ -161,7 +161,7 @@ This section is mandatory, and here is the honest list for this project:
    failure mode #4). A genuine human pass might show a different gap, but there's no
    reason to expect it would show *no* gap -- LLM judges are known to skew lenient.
 4. **Escalation precision/recall on 200 examples has wide uncertainty**, especially for
-   the minority "escalate" class (36/200 = 18% gold-labeled base rate). The `llm` tier's
+   the minority "escalate" class (37/200 = 18.5% gold-labeled base rate). The `llm` tier's
    escalation precision (0.565) means roughly 4 in 10 of its escalations are cases a
    human wouldn't have flagged -- costly in reviewer time, though the failure-mode
    analysis suggests the more dangerous error (auto-handling something that should have
