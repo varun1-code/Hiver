@@ -5,6 +5,17 @@ regenerate with `scripts/06_evaluate.py`). LLM calls for this run used TheHive.a
 `hive/vision-language-model` (see decision log #15 for why the backend changed from
 Gemini mid-project)._
 
+**Citations / borrowed material**: this project uses standard open-source libraries only
+(`scikit-learn` for TF-IDF retrieval and cosine similarity, `pandas` for data wrangling,
+`python-dotenv` for config, `scipy` for Spearman correlation -- all in `requirements.txt`),
+called in ordinary ways with no copied implementation code. No code, prompts, or taxonomy
+were copied from a tutorial, blog post, Stack Overflow answer, or another repository. The
+Banking77 dataset was considered and deliberately not used (see "what I chose not to
+build"). Claude Code (Anthropic) was used throughout as an AI coding assistant per the
+assignment's rules, including for the golden-set/judge-calibration labeling passes --
+disclosed in full in `data/LABELING_GUIDE.md`, since that disclosure is load-bearing for
+how the evaluation numbers in this report should be read.
+
 ## 1. Problem framing
 
 **What "good" means for this agent, concretely:**
