@@ -48,4 +48,8 @@ Dimensions (integer 1-5 each):
 - overall: your holistic 1-5 judgment, not simply the average of the above.
 
 Also give a one-sentence rationale for the overall score."""
-    return generate_json(prompt, json_schema=_JUDGE_SCHEMA, temperature=0.0, max_output_tokens=300)
+    result = generate_json(prompt, json_schema=_JUDGE_SCHEMA, temperature=0.0, max_output_tokens=300)
+    for k in ("relevance", "faithfulness", "tone", "actionability", "overall"):
+        if k in result and result[k] is not None:
+            result[k] = int(result[k])
+    return result

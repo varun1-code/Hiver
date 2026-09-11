@@ -15,14 +15,24 @@ BRAND = "AppleSupport"
 
 # Model used for every LLM call in the pipeline (classification, generation, judging).
 # Kept to a single cheap/fast model so the whole eval run is inexpensive and reproducible.
-# NOTE: "gemini-flash-latest" (-> gemini-3.8-flash on this key) has only a
-# 20-REQUESTS-PER-DAY free quota, exhausted almost immediately during
-# development. "gemini-flash-lite-latest" (-> gemini-3.5-flash-lite) has a
-# separate, much more usable 15-REQUESTS-PER-MINUTE quota. See README.
+# Two LLM backends were evaluated during development (see decision log):
+# - "gemini": free-tier Gemini keys hit a 20-REQUESTS-PER-DAY quota on
+#   gemini-flash-latest, and even the more permissive gemini-flash-lite-latest
+#   (15 req/min) is slow for a 200-case run. Also, one Gemini key supplied
+#   during development turned out to be a short-lived OAuth token rather than
+#   a stable API key and expired mid-run.
+# - "hive" (default): TheHive.ai's OpenAI-compatible chat completions API,
+#   which had no rate-limit issues in testing at the volume this project
+#   needs. Used for the reported headline numbers.
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "hive")
+
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 GEMINI_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
+
+HIVE_MODEL = os.environ.get("HIVE_MODEL", "hive/vision-language-model")
+HIVE_API_URL = "https://api.thehive.ai/api/v3/chat/completions"
 
 # How many historical cases to build from the raw dump, and how the reference/eval
 # split is drawn. Grouped by thread root so no thread crosses the split (leakage guard).
@@ -78,6 +88,11 @@ ESCALATION_SIGNAL_KEYWORDS = [
     "hacked", "unauthorized charge", "safety", "fire", "smoke", "explod",
     "injur", "refund now", "cancel my account", "delete my account",
     "discriminat", "threat", "self harm", "suicide",
+    # Added after finding a real miss during evaluation: a headphones
+    # "burned and shocked" case (physical injury risk) was auto-handled
+    # because none of these fired -- see report failure analysis #1.
+    "burn", "burned", "burning", "shock", "shocked", "electrocut",
+    "overheat", "swoll", "swelling", "smoke coming",
 ]
 
 ESCALATION_REQUEST_PHRASES = [

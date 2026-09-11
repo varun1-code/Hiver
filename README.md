@@ -18,13 +18,19 @@ Three system tiers are implemented and compared head-to-head:
 |---|---|---|---|
 | `trivial` | majority class (constant) | one canned generic reply | always auto-handle |
 | `simple` | keyword/regex rules | copy of nearest retrieved historical reply | rule-based (shared) |
-| `llm` (main system) | Gemini, taxonomy in-context | Gemini, RAG-grounded in top-3 retrieved cases | rule-based (shared) |
+| `llm` (main system) | LLM, taxonomy in-context | LLM, RAG-grounded in top-3 retrieved cases | rule-based (shared) |
+
+The `llm` tier's headline numbers were produced using **TheHive.ai's** chat completions
+API (`hive/vision-language-model`), not Gemini -- see Setup and decision log #15 for why
+(short version: free-tier Gemini quotas and an expiring OAuth-style credential made it
+unworkable for a 200-case run; `src/llm_client.py` supports both behind one interface via
+the `LLM_PROVIDER` env var).
 
 ## Setup
 
 ```powershell
 pip install -r requirements.txt
-cp .env.example .env   # then fill in GEMINI_API_KEY
+cp .env.example .env   # then fill in HIVE_API_KEY (or set LLM_PROVIDER=gemini + GEMINI_API_KEY)
 ```
 
 Requires the Kaggle dataset at `reports/twcs/twcs.csv`. If you don't already have it:
@@ -38,23 +44,36 @@ python -c "import kagglehub; print(kagglehub.dataset_download('thoughtvector/cus
 ```powershell
 python scripts\01_prepare_dataset.py         # ~1-2 min: builds cases from the raw CSV
 python scripts\02_sample_golden.py           # seconds: (re)builds the golden template
-python scripts\03_run_pipeline.py --limit 40 # ~5 min: runs all 3 tiers on 40 golden cases
-python scripts\04_run_judge.py --limit 40    # ~4 min: LLM-judge scores the drafted replies
+python scripts\03_run_pipeline.py --limit 40 # ~2 min: runs all 3 tiers on 40 golden cases
+python scripts\04_run_judge.py --limit 40    # ~2 min: LLM-judge scores the drafted replies
 python scripts\06_evaluate.py                # seconds: prints + writes reports/metrics.json
 ```
 
-`--limit 40` exists because of a real constraint, not convenience: Gemini's free tier
-caps `gemini-flash-latest` at **20 requests/minute**, and the `llm` tier makes 2 calls/case
-(classify + generate) plus 1 judge call/case. At that rate the full 200-case golden set
-takes **~45-60 minutes**, not 15. The quick-demo numbers on 40 cases are directionally
-consistent with the full run but noisier (smaller n per intent bucket) -- see the
-report's "what's misleading" section.
+`--limit 40` keeps the quick demo comfortably under 15 minutes end-to-end (dataset prep is
+the slow part at 1-2 min for ~2.8M rows; the Hive API calls themselves are fast with no
+meaningful rate limit at this volume). The quick-demo numbers on 40 cases are directionally
+consistent with the full run but noisier (smaller n per intent bucket) -- see the report's
+"what's misleading" section.
+
+**Note on resume behavior**: `reports/predictions_*.jsonl` and `reports/judged_*.jsonl`
+are committed (they're the evaluation evidence). `scripts/03_run_pipeline.py` and
+`scripts/04_run_judge.py` skip any case_id already present without an `"error"` field
+(see README "Data pipeline" and the scripts themselves), so re-running the quick-demo
+commands against a fresh clone will mostly replay cached results almost instantly rather
+than re-calling the API. To actually exercise the live pipeline end-to-end, delete the
+relevant `reports/*.jsonl` file(s) first.
+
+**Note on the Gemini path** (`LLM_PROVIDER=gemini`): if you use a Gemini key instead,
+budget much more time -- `gemini-flash-latest`'s free tier is capped at 20
+REQUESTS PER DAY (not per minute), and even the more usable `gemini-flash-lite-latest`
+(15 req/min) makes the full 200-case run take ~45-60 minutes. This is why the report's
+headline numbers use Hive instead (see decision log #15).
 
 ## Full run (what produced the report's headline numbers)
 
 ```powershell
-python scripts\03_run_pipeline.py            # no --limit: all 200 golden cases, ~35-45 min
-python scripts\04_run_judge.py               # judges simple + llm tiers, ~15-20 min
+python scripts\03_run_pipeline.py            # no --limit: all 200 golden cases, ~10 min on Hive
+python scripts\04_run_judge.py               # judges simple + llm tiers, ~10 min on Hive
 python scripts\05_sample_judge_calibration.py
 # then manually fill reports/judge_calibration_template.jsonl's human_overall_score_1to5
 python scripts\06_evaluate.py
@@ -95,7 +114,7 @@ See `REPORT.md` for the full report; the condensed decision log is in
 ```
 src/
   config.py          intent taxonomy, brand, model, thresholds -- all in one place
-  llm_client.py       minimal Gemini REST wrapper (no SDK dep), throttled to free-tier RPM
+  llm_client.py       minimal REST wrapper for Hive or Gemini (no SDK dep), behind one interface
   text_utils.py        mention/URL stripping for matching (display text is never altered)
   classifiers.py       majority / keyword / llm intent classifiers
   retrieval.py          TF-IDF retrieval over the reference pool

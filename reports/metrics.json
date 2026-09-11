@@ -1,0 +1,149 @@
+{
+  "n_golden": 200,
+  "tiers": {
+    "trivial": {
+      "n": 200,
+      "intent_accuracy": 0.03,
+      "intent_macro_f1": 0.0073,
+      "escalation_accuracy": 0.82,
+      "escalation_precision_for_escalate_class": 0.0,
+      "escalation_recall_for_escalate_class": 0.0,
+      "escalation_f1_for_escalate_class": 0.0,
+      "auto_handled_fraction": 1.0,
+      "judge_mean_overall_score": null,
+      "n_judged": 0
+    },
+    "simple": {
+      "n": 200,
+      "intent_accuracy": 0.405,
+      "intent_macro_f1": 0.4029,
+      "escalation_accuracy": 0.77,
+      "escalation_precision_for_escalate_class": 0.4242,
+      "escalation_recall_for_escalate_class": 0.7778,
+      "escalation_f1_for_escalate_class": 0.549,
+      "auto_handled_fraction": 0.67,
+      "judge_mean_overall_score": 3.43,
+      "n_judged": 200
+    },
+    "llm": {
+      "n": 200,
+      "intent_accuracy": 0.775,
+      "intent_macro_f1": 0.7036,
+      "escalation_accuracy": 0.85,
+      "escalation_precision_for_escalate_class": 0.5652,
+      "escalation_recall_for_escalate_class": 0.7222,
+      "escalation_f1_for_escalate_class": 0.6341,
+      "auto_handled_fraction": 0.77,
+      "judge_mean_overall_score": 3.86,
+      "n_judged": 200
+    }
+  },
+  "llm_confusion_matrix": {
+    "labels": [
+      "software_bug_after_update",
+      "update_install_issue",
+      "hardware_malfunction",
+      "connectivity_issue",
+      "account_access",
+      "billing_purchase",
+      "how_to_question",
+      "complaint_feedback"
+    ],
+    "matrix": [
+      [
+        85,
+        2,
+        11,
+        0,
+        3,
+        0,
+        2,
+        1
+      ],
+      [
+        4,
+        9,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        10,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        15,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        10,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3,
+        11,
+        3,
+        0
+      ],
+      [
+        2,
+        0,
+        1,
+        0,
+        0,
+        0,
+        12,
+        1
+      ],
+      [
+        2,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ]
+  },
+  "judge_human_agreement": {
+    "n": 40,
+    "exact_agreement": 0.225,
+    "within_1_point_agreement": 0.75,
+    "quadratic_weighted_kappa": 0.3161,
+    "spearman_rho": 0.5062
+  },
+  "labeler_agreement": {
+    "n": 30,
+    "intent_exact_agreement": 0.8,
+    "intent_cohen_kappa": 0.6913,
+    "escalation_exact_agreement": 1.0,
+    "escalation_cohen_kappa": 1.0
+  }
+}
