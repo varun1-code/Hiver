@@ -1,1 +1,5 @@
-reports/
+# Raw Kaggle dataset (~500MB) -- not committed, README explains how to fetch it.
+reports/twcs/
+.env
+__pycache__/
+*.pyc

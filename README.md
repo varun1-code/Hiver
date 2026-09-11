@@ -1,47 +1,121 @@
-# AppleSupport Twitter support agent
+# AppleSupport AI support agent -- Hiver take-home
 
-This repository contains a small, reproducible baseline for the Hiver take-home assignment. It classifies an inbound message, retrieves a historically similar AppleSupport resolution, drafts a grounded reply, and escalates low-confidence or sensitive cases.
+An AI support agent for the Twitter handle **@AppleSupport**, built from the full
+"Customer Support on Twitter" Kaggle dataset (~2.8M rows, downloaded to
+`reports/twcs/twcs.csv`, gitignored -- see Setup below). For an inbound customer
+message it:
 
-## Important data limitation
+1. **Classifies** the message into one of 8 intents (see `src/config.py`).
+2. **Drafts a reply** grounded in the closest historically-resolved AppleSupport
+   case, retrieved via TF-IDF over a reference pool that is disjoint from the
+   evaluation set (no leakage -- see "What's misleading" below).
+3. **Decides auto-handle vs. escalate**, with a stated, auditable reason
+   (`src/escalation.py` -- deliberately rule-based, not LLM-decided).
 
-`C:\Users\varun\Downloads\sample.csv` contains 93 rows and only 13 inbound AppleSupport messages. It is useful for demonstrating the pipeline, but it cannot honestly produce the required 150–250-example hand-labelled golden set. The included preparation command creates a labelling template; do not present its auto-filled fields as human labels. Download the full Kaggle dataset or a larger approved subsample before reporting headline metrics.
+Three system tiers are implemented and compared head-to-head:
 
-## Run in under 15 minutes
+| Tier | Classifier | Reply | Escalation |
+|---|---|---|---|
+| `trivial` | majority class (constant) | one canned generic reply | always auto-handle |
+| `simple` | keyword/regex rules | copy of nearest retrieved historical reply | rule-based (shared) |
+| `llm` (main system) | Gemini, taxonomy in-context | Gemini, RAG-grounded in top-3 retrieved cases | rule-based (shared) |
 
-The code uses only the Python standard library (Python 3.10+):
+## Setup
 
 ```powershell
-python src\prepare.py --csv C:\Users\varun\Downloads\sample.csv --brand AppleSupport
-python src\run_agent.py --csv C:\Users\varun\Downloads\sample.csv --brand AppleSupport
+pip install -r requirements.txt
+cp .env.example .env   # then fill in GEMINI_API_KEY
 ```
 
-Inspect `reports\predictions.jsonl`. Every prediction includes the intent, confidence, draft reply, auto-handle decision, reason, and the historical evidence used.
+Requires the Kaggle dataset at `reports/twcs/twcs.csv`. If you don't already have it:
+```powershell
+python -c "import kagglehub; print(kagglehub.dataset_download('thoughtvector/customer-support-on-twitter'))"
+# then copy the twcs.csv it downloads to reports/twcs/twcs.csv
+```
 
-After manually labelling `data\golden_template.jsonl` (rename or copy it to `data\golden.jsonl`), run:
+## Reproduce in under 15 minutes (quick demo)
 
 ```powershell
-python src\evaluate.py --gold data\golden.jsonl --predictions reports\predictions.jsonl
+python scripts\01_prepare_dataset.py         # ~1-2 min: builds cases from the raw CSV
+python scripts\02_sample_golden.py           # seconds: (re)builds the golden template
+python scripts\03_run_pipeline.py --limit 40 # ~5 min: runs all 3 tiers on 40 golden cases
+python scripts\04_run_judge.py --limit 40    # ~4 min: LLM-judge scores the drafted replies
+python scripts\06_evaluate.py                # seconds: prints + writes reports/metrics.json
 ```
 
-## Labelling protocol
+`--limit 40` exists because of a real constraint, not convenience: Gemini's free tier
+caps `gemini-flash-latest` at **20 requests/minute**, and the `llm` tier makes 2 calls/case
+(classify + generate) plus 1 judge call/case. At that rate the full 200-case golden set
+takes **~45-60 minutes**, not 15. The quick-demo numbers on 40 cases are directionally
+consistent with the full run but noisier (smaller n per intent bucket) -- see the
+report's "what's misleading" section.
 
-Sample 150–250 inbound AppleSupport messages stratified by time and predicted intent. A human labels `gold_intent`, `gold_auto_handled`, and `gold_reply_quality` (1–5), while preserving the original text. A second person independently labels at least 30 examples; report Cohen's kappa for intent and escalation, plus exact agreement for the 1–5 quality score. Resolve disagreements before locking the set.
+## Full run (what produced the report's headline numbers)
 
-## What the current system does and does not claim
+```powershell
+python scripts\03_run_pipeline.py            # no --limit: all 200 golden cases, ~35-45 min
+python scripts\04_run_judge.py               # judges simple + llm tiers, ~15-20 min
+python scripts\05_sample_judge_calibration.py
+# then manually fill reports/judge_calibration_template.jsonl's human_overall_score_1to5
+python scripts\06_evaluate.py
+```
 
-The classifier is an auditable keyword baseline, not a trained language model. Retrieval uses token overlap and only copies a historical reply when there is a sufficiently close match; otherwise it uses a conservative template. Escalation is intentionally biased toward safety. The evaluation script includes a majority-intent baseline and is designed to be extended with a random or “always escalate” baseline once the golden set is labelled.
+Inspect `reports/predictions_{trivial,simple,llm}.jsonl` (per-case output with intent,
+confidence, drafted reply, auto_handle + reason, and retrieval evidence used),
+`reports/judged_{simple,llm}.jsonl` (LLM-judge scores), and `reports/metrics.json`
+(everything aggregated: accuracy/F1, escalation precision/recall, judge scores, judge-human
+agreement, and the two-labeler agreement on the golden set itself).
 
-The headline number will be misleading if the golden set is sampled from the same threads used as retrieval evidence, if duplicates or near-duplicates cross the split, or if reply quality is judged only by an LLM. Keep conversations grouped by thread, deduplicate before splitting, and report human agreement and abstention coverage alongside accuracy.
+## Data pipeline & leakage guard
+
+`scripts/01_prepare_dataset.py` builds ~83k (customer message -> AppleSupport's actual
+reply) cases from first-turn @AppleSupport-directed tweets, dedupes near-identical text,
+subsamples to 8,000, and splits by case into a **reference pool** (6,000 -- the retrieval
+index used at inference time) and an **eval pool** (2,000 -- golden set is sampled from
+here only). The eval pool is never added to the retrieval index, so a drafted reply can't
+be "grounded" in its own case's real historical answer.
+
+## Golden evaluation set
+
+`data/golden.jsonl` -- 200 examples, stratified-sampled from the eval pool and labeled
+independently of any classifier's suggestion. Full sampling/labeling methodology,
+inter-rater agreement design, and an explicit disclosure about how these labels were
+produced are in `data/LABELING_GUIDE.md` and `data/LABELING_NOTES.md` -- **read that
+disclosure before treating these numbers as final**; it documents that automated
+labeling was used for scaffolding and that a human pass is still needed before
+submission.
 
 ## Decision log
 
-- Chose AppleSupport because it has the most brand-authored support rows in the supplied sample.
-- Used an explicit intent taxonomy rather than importing Banking77 labels, because the domain and observable failure modes differ.
-- Kept the implementation dependency-free so the small-sample reproduction is reliable.
-- Used retrieval only above a similarity threshold to avoid inventing a historical resolution.
-- Escalated sensitive terms and low-confidence cases instead of optimizing auto-handling coverage.
-- Removed URLs and mentions for matching but preserved original text in outputs.
-- Required human labels before evaluation metrics are emitted as evidence.
-- Kept evidence text in every prediction for auditability.
-- Grouped the intended evaluation split by conversation thread to prevent leakage.
-- Treated the supplied CSV as a development sample, not a valid final benchmark.
+See `REPORT.md` for the full report; the condensed decision log is in
+`REPORT.md#decision-log`.
+
+## Repository layout
+
+```
+src/
+  config.py          intent taxonomy, brand, model, thresholds -- all in one place
+  llm_client.py       minimal Gemini REST wrapper (no SDK dep), throttled to free-tier RPM
+  text_utils.py        mention/URL stripping for matching (display text is never altered)
+  classifiers.py       majority / keyword / llm intent classifiers
+  retrieval.py          TF-IDF retrieval over the reference pool
+  reply_drafters.py      template-copy baseline reply + LLM RAG-grounded reply
+  escalation.py           shared rule-based auto-handle/escalate decision
+  pipeline.py              ties each tier together into one run_*() call
+  judge.py                  LLM-as-judge reply-quality scoring
+scripts/
+  01_prepare_dataset.py       build cases + reference/eval split from the raw CSV
+  02_sample_golden.py          stratified golden-set sample + AI-drafted label template
+  03_run_pipeline.py            run all 3 tiers over the golden set
+  04_run_judge.py                 LLM-judge the drafted replies
+  05_sample_judge_calibration.py    blind human-scoring template for judge calibration
+  06_evaluate.py                     all metrics -> reports/metrics.json
+  exploration/                        one-off EDA scripts used to pick the brand/taxonomy
+data/
+  cases.jsonl, reference_pool.jsonl, eval_pool.jsonl   (committed -- small, derived, needed to reproduce)
+  golden_template.jsonl, golden.jsonl, golden_second_labeler_subset.jsonl
+  LABELING_GUIDE.md, LABELING_NOTES.md
+reports/
+  twcs/twcs.csv          the raw ~500MB Kaggle dump (gitignored, see Setup)
+  predictions_*.jsonl, judged_*.jsonl, metrics.json, judge_calibration_*.jsonl (committed -- these are the evidence)
+```
