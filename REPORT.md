@@ -36,8 +36,9 @@ how the evaluation numbers in this report should be read.
 - No multi-turn conversation state / follow-up handling -- every case is treated as a
   fresh inbound message. Real support threads often go 3-5 turns; this only handles
   turn 1. (See "what I'd do next.")
-- No fine-tuned classifier -- the "main system" classifier is a prompted Gemini call,
-  not a trained model. For a brand with 80k+ labeled historical cases available, a
+- No fine-tuned classifier -- the "main system" classifier is a prompted LLM call
+  (Hive by default; see `config.LLM_PROVIDER`), not a trained model. For a brand with
+  80k+ labeled historical cases available, a
   fine-tuned or even a simple TF-IDF+logistic-regression classifier trained on
   historical replies (using reply content as a weak label source) would likely be
   cheaper and faster at inference than an LLM call, and is a natural next iteration.
@@ -335,11 +336,12 @@ This section is mandatory, and here is the honest list for this project:
 9. **Golden-set sampling caps any single keyword-predicted-intent stratum at 35/200**,
    trading "matches raw traffic mix" for "computable macro-F1 across all 8 intents" --
    see "what's misleading" #1 for the cost of this choice.
-10. **A single Gemini model (`gemini-flash-latest`) is used for classification, reply
-    generation, AND judging.** Cheaper and simpler to reproduce than mixing models, at
-    the cost of a judge that may share the classifier/generator's blind spots (a
-    same-family-judge risk, distinct from the human-agreement caveat in "what's
-    misleading" #3).
+10. **A single model is used for classification, reply generation, AND judging**
+    (`hive/vision-language-model` for the reported headline numbers; `gemini-flash-lite-latest`
+    was used during earlier development -- see decision log #15). Cheaper and simpler
+    to reproduce than mixing models, at the cost of a judge that may share the
+    classifier/generator's blind spots (a same-family-judge risk, distinct from the
+    human-agreement caveat in "what's misleading" #3).
 11. **The LLM-judge never sees the real historical AppleSupport reply**, only the
     customer message, the drafted reply, and (implicitly, via the drafted reply's own
     content) the retrieved evidence -- specifically to prevent the judge from just
@@ -352,10 +354,12 @@ This section is mandatory, and here is the honest list for this project:
     template. The raw ~500MB Kaggle CSV is gitignored under `reports/twcs/`, but all
     derived `data/*.jsonl` files and `reports/*.json(l)` result files are committed,
     since those ARE the evidence this project is graded on.
-14. **Golden-set and judge-calibration labels were produced by an AI assistant
-    reading text directly, not humans**, and this is disclosed rather than presented as
-    genuine independent human labeling -- see `data/LABELING_GUIDE.md` and "what's
-    misleading" #2/#3.
+14. **Golden-set and judge-calibration labels were initially produced by an AI
+    assistant reading text directly, not humans**, and this was disclosed rather than
+    presented as genuine independent human labeling -- see `data/LABELING_GUIDE.md`.
+    (Superseded in part by decision log #17/#18: 43/200 golden labels and the 30-case
+    agreement subset are now genuinely human-decided; see "what's misleading" #2/#3 for
+    the current, precise breakdown.)
 15. **The LLM backend was switched from Gemini to TheHive.ai mid-project, and this is
     the single biggest engineering-judgment story in this project.** Gemini's free-tier
     `gemini-flash-latest` turned out to be capped at 20 REQUESTS PER DAY (not per
