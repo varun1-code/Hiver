@@ -1,0 +1,23 @@
+{
+  "human_vs_ai_primary_pass": {
+    "n": 30,
+    "intent_exact_agreement": 0.8,
+    "intent_cohen_kappa": 0.6907,
+    "escalation_exact_agreement": 0.9333,
+    "escalation_cohen_kappa": 0.8148
+  },
+  "human_vs_ai_secondpass_v1_30case": {
+    "n": 30,
+    "intent_exact_agreement": 0.8,
+    "intent_cohen_kappa": 0.7049,
+    "escalation_exact_agreement": 0.9333,
+    "escalation_cohen_kappa": 0.8148
+  },
+  "human_vs_ai_secondpass_v2_full200": {
+    "n": 30,
+    "intent_exact_agreement": 1.0,
+    "intent_cohen_kappa": 1.0,
+    "escalation_exact_agreement": 1.0,
+    "escalation_cohen_kappa": 1.0
+  }
+}

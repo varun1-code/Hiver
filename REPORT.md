@@ -78,23 +78,35 @@ need immediate context, though (see "what's misleading" for the full list):
   that a human said needed review, including the safety-relevant case described in
   failure mode #1 below. Escalation accuracy alone is not a safe headline metric; the
   escalate-class F1 is the number that actually matters here.
-- **The LLM judge is measurably more lenient than the human-equivalent calibration
-  scorer**: on the 40-case blind calibration subset, mean human score was 3.10 vs. mean
-  judge score 3.98 -- a ~0.9-point inflation on a 5-point scale (`reports/metrics.json`
-  -> `judge_human_agreement`, and see #4 below). Read `judge_mean_overall_score` as
-  "the judge's opinion," not "reply quality" directly.
+- **The LLM judge is measurably more lenient than a real human scorer**: on the 40-case
+  blind calibration subset, scored by Varun with no visibility into the judge's own
+  scores, mean human score was 3.35 vs. mean judge score 3.975 -- a ~0.6-point inflation
+  on a 5-point scale (`reports/metrics.json` -> `judge_human_agreement`, and see #4
+  below). Read `judge_mean_overall_score` as "the judge's opinion," not "reply quality"
+  directly.
 
-**Inter-rater reliability, updated**: an independent blind second AI pass over the full
-200-case golden set agreed with the original primary pass on 157/200 (78.5%) of cases
-(intent Cohen's kappa 0.799, escalation kappa 0.781 -- `reports/ai_pass_agreement_full200.json`).
-The 43 disagreement/ambiguous cases were then personally adjudicated by Varun, each
-with a written case-specific rationale (`data/human_adjudication_43cases.csv`); this is
-what changed the headline numbers above. Separately, a 30-case AI-vs-AI subset
-(pre-dating this adjudication process, kept as an independent check) shows 80% exact
-intent agreement (kappa 0.70) and 93.3% escalation agreement (kappa 0.81). **Judge-vs-
-human agreement** on the 40-case calibration subset: 22.5% exact match, 75% within one
-point, quadratic-weighted kappa 0.32 ("fair"), Spearman rho 0.51 (moderate positive
-correlation) -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
+**Inter-rater reliability, updated with genuine human data**: an independent blind
+second AI pass over the full 200-case golden set agreed with the original primary pass
+on 157/200 (78.5%) of cases (intent Cohen's kappa 0.799, escalation kappa 0.781 --
+`reports/ai_pass_agreement_full200.json`). The 43 disagreement/ambiguous cases were
+then personally adjudicated by Varun, each with a written case-specific rationale
+(`data/human_adjudication_43cases.csv`); this is what changed the headline numbers
+above. Separately, Varun independently blind-labeled a 30-case subset from scratch, no
+AI labels visible (`data/golden_human_blind_30.jsonl`) -- giving this project's first
+genuine **human-vs-AI** Cohen's kappa: 80% exact / kappa 0.69 against the original
+primary AI labels, and 80% exact / kappa 0.70 against an older, independently-generated
+30-case AI pass (`reports/human_vs_ai_agreement.json`). Both land close to the AI-vs-AI
+agreement rate itself (78.5%/157 of 200), which is a genuinely reassuring result: an
+independent human disagrees with this project's AI labeling about as often as two AI
+passes disagree with each other, not more. **One anomaly is disclosed rather than used**:
+this same human labeling agreed 100% (30/30, both fields) with a *third* AI pass
+(`data/ai_blind_secondpass_full200.jsonl`) -- a rate inconsistent with the ~80%
+agreement against the other two independent AI passes on the identical 30 cases, and
+higher than a genuinely blind human labeler would be expected to produce by chance. That
+comparison is excluded from the reported kappa above for exactly this reason (see
+decision log #18). **Judge-vs-human agreement**, now genuine, on the 40-case calibration
+subset: 40% exact match, 77.5% within one point, quadratic-weighted kappa 0.32 ("fair"),
+Spearman rho 0.37 -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
 
 ## 3. Failure analysis (top 5, with real examples)
 
@@ -135,15 +147,19 @@ correlation) -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
    one of the 43 human-adjudicated cases and its gold label was flipped to
    `hardware_malfunction` on review, which is itself evidence of how genuinely
    borderline this class boundary is).
-4. **The LLM judge is measurably more lenient than human-equivalent scoring**, and
-   agreement is weaker than the headline number suggests: quadratic-weighted kappa 0.32
-   ("fair," not "good"), only 22.5% exact match, though 75% land within 1 point and the
-   correlation direction is right (Spearman rho 0.51). The judge's mean (3.98) sits
-   nearly a full point above the human-equivalent mean (3.10) on the same 40 replies.
-   Concretely: several replies that are polite-but-non-answers (e.g. "we'd love to help,
-   DM us" to a specific how-to question) were scored 4-5 by the judge but 2-3 by the
-   calibration pass, because the judge's `actionability` dimension rewards "customer
-   knows to DM" even when the actual question went unanswered. **Any judge-only quality
+4. **The LLM judge is measurably more lenient than a real human scorer**, and agreement
+   is weaker than the headline number suggests: quadratic-weighted kappa 0.32 ("fair,"
+   not "good"), only 40% exact match, though 77.5% land within 1 point and the
+   correlation direction is right (Spearman rho 0.37). The judge's mean (3.975) sits
+   ~0.6 points above the genuine human mean (3.35) on the same 40 replies
+   (`data/REVIEW_3_blind_40_judge.csv`, scored blind to the judge's own output).
+   Concretely: case `811638` (a payment-failure/iTunes-sign-in issue) got the generic
+   reply *"We'd be happy to help. Please DM us with your iOS version and the error
+   message you're seeing"* -- the judge scored it 5/5, the human scorer 2/5, because the
+   reply never engages with the actual payment/sign-in problem and the judge's
+   `actionability` dimension rewards "customer knows to DM" even when the real question
+   went unanswered. This pattern (judge 4-5, human 2) repeats across several of the
+   generic-DM-request replies (`184501`, `1458740`, `897701`). **Any judge-only quality
    claim in this report should be discounted by roughly this much.**
 5. **The simple baseline's `complaint_feedback` catch-all overstates how often that
    intent is real.** The keyword baseline defaults to `complaint_feedback` whenever no
@@ -175,21 +191,25 @@ This section is mandatory, and here is the honest list for this project:
    seeing where the two AI passes disagreed or flagged ambiguity. This is real progress
    over a single unreviewed AI pass (it directly changed the headline numbers in section
    2), but it is not the same claim as "every one of the 200 labels was independently
-   hand-built." The 0.799 intent / 0.781 escalation kappa between the two AI passes is
-   evidence the rubric is applied consistently by an AI reader, not evidence the labels
-   match objective truth -- and the 43 human corrections show the rubric-applied-
-   consistently labels were themselves sometimes wrong. **`data/REVIEW_2_blind_30.csv`,
-   an independent from-scratch human relabel with no AI labels visible, is still needed
-   for a genuine human-vs-AI kappa** (as opposed to the adjudication numbers above,
-   which are conditioned on having already seen both AI outputs). Full methodology:
-   `data/LABELING_GUIDE.md`.
-3. **The judge-human agreement numbers are still an AI-vs-AI proxy**
-   (`reports/judge_calibration_template.jsonl`'s `human_overall_score_1to5` was filled by
-   an independent AI pass, not a person -- see `data/LABELING_GUIDE.md`). That said, this
-   proxy calibration surfaced something real regardless of who scored it: a fair-not-good
-   kappa (0.32) and a ~0.9-point leniency gap between judge and calibration scores (see
-   failure mode #4). A genuine human pass might show a different gap, but there's no
-   reason to expect it would show *no* gap -- LLM judges are known to skew lenient.
+   hand-built." A separate, from-scratch, blind human relabel of a 30-case subset
+   (`data/golden_human_blind_30.jsonl`, no AI labels visible while labeling) gives a
+   genuine human-vs-AI comparison: 80% exact / kappa 0.69-0.70 against two independently-
+   generated AI passes on the same 30 cases -- reassuringly close to the 78.5% AI-vs-AI
+   agreement rate itself, suggesting the rubric produces reasonably consistent judgments
+   whether an AI or a human applies it. **One important caveat on that same 30-case
+   file**: it also showed 100% (30/30) agreement against a *third* AI pass, a rate
+   inconsistent with its ~80% agreement against the other two AI passes on the identical
+   cases. That specific comparison is disclosed but excluded from the reported kappa
+   above, since a rate that anomalous is more likely to reflect some non-independence in
+   how that file was produced than genuine blind labeling -- see decision log #18.
+3. **The judge-human agreement numbers are now genuine** (`reports/judge_calibration_template.jsonl`'s
+   `human_overall_score_1to5` was scored by Varun, blind to the judge's own scores --
+   `data/REVIEW_3_blind_40_judge.csv`). Result: a fair-not-good kappa (0.32) and a
+   ~0.6-point leniency gap between judge (3.975) and human (3.35) scores on the same 40
+   replies (see failure mode #4) -- somewhat smaller than an earlier AI-proxy estimate of
+   this same gap (~0.9 points), but the direction and existence of the gap holds up under
+   real human scoring. LLM judges are known to skew lenient; this project's own judge is
+   no exception.
 4. **Escalation precision/recall on 200 examples has wide uncertainty**, especially for
    the minority "escalate" class (49/200 = 24.5% gold-labeled base rate, up from an
    earlier 18.5% once the 43-case human adjudication corrected several under-escalated
@@ -219,9 +239,15 @@ This section is mandatory, and here is the honest list for this project:
 
 ## 5. What I'd do next with one more week
 
-1. **Get a real second human labeler** for the golden set and the judge-calibration
-   subset, replacing the AI-drafted passes, and recompute all agreement numbers -- this
-   is the single highest-priority item, since it's the assumption everything else rests on.
+1. **Extend genuine human labeling beyond the current 30+43/200.** A blind 30-case
+   human relabel and a genuine 40-case human judge-calibration pass are now done (see
+   section 2 and decision log #18), and 43/200 golden labels are human-adjudicated, but
+   157/200 golden labels are still only AI-confirmed-by-agreement. Getting a second
+   independent human to relabel a larger, disjoint subset -- ideally the same 30 cases,
+   to get a genuine human-vs-human kappa as well -- would resolve the one open question
+   this report can't yet answer: whether the ~80% AI-vs-human agreement reflects the AI
+   converging on the right answer, or two different-but-equally-plausible readings of
+   ambiguous rubric edge cases.
 2. **Fix the "confident but wrong" auto-handle gap (failure mode #2)**, the report's
    biggest finding: add a lightweight faithfulness check between the drafted reply and
    its retrieved evidence (e.g. NLI-style entailment, or a second cheap LLM call asking
@@ -376,7 +402,24 @@ This section is mandatory, and here is the honest list for this project:
     draft with templated notes on ~98% of rows) was caught and explicitly discarded
     rather than used, precisely because it would have misrepresented AI output as human
     review.
-18. **A second external review (post-submission-draft) confirmed the priority order of
+18. **Genuine human labeling was added for a 30-case subset and 40-case judge
+    calibration, and one anomalous result was found and excluded rather than reported.**
+    Varun independently blind-labeled 30 golden-set cases from scratch
+    (`data/golden_human_blind_30.jsonl`, no AI labels visible) and blind-scored 40
+    drafted replies for the judge calibration (`data/REVIEW_3_blind_40_judge.csv`, no
+    judge scores visible). The judge-calibration numbers are used as-is (genuine
+    40%/kappa 0.32/0.6-point leniency gap). The 30-case labeling agreed with two
+    independent AI passes at a believable ~80% (kappa 0.69-0.70) each, consistent with
+    the 78.5% AI-vs-AI agreement rate -- but also agreed 100% (30/30, both fields) with
+    a third specific AI pass, a rate statistically inconsistent with the other two
+    comparisons on the identical cases. Asked directly, the labeler confirmed the work
+    was done independently; the number is disclosed here anyway and excluded from the
+    reported kappa in section 2 and "what's misleading" #2, because a result this
+    improbable would undermine the report's credibility more than omitting it,
+    regardless of cause. This mirrors decision log #17's discarded first attempt: when a
+    human-labeling result looks too clean, the right move in this project has
+    consistently been to say so rather than use it.
+19. **A second external review (post-submission-draft) confirmed the priority order of
     "what I'd do next"** -- human-label validation, a faithfulness gate, and a dedicated
     safety classifier as the top three -- and surfaced three items not yet written down:
     confidence calibration, embedding-based retrieval, and run manifests for cache

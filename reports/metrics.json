@@ -134,10 +134,10 @@
   },
   "judge_human_agreement": {
     "n": 40,
-    "exact_agreement": 0.225,
-    "within_1_point_agreement": 0.75,
-    "quadratic_weighted_kappa": 0.3161,
-    "spearman_rho": 0.5062
+    "exact_agreement": 0.4,
+    "within_1_point_agreement": 0.775,
+    "quadratic_weighted_kappa": 0.32,
+    "spearman_rho": 0.3719
   },
   "labeler_agreement": {
     "n": 30,

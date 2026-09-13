@@ -52,13 +52,42 @@ agreement stat in `reports/metrics.json`'s `labeler_agreement` predate this proc
 and are left as an independent check (it wasn't used to build or adjudicate anything
 above).
 
-**Current disclosure**: 43/200 (21.5%) of the golden labels reflect a genuine human
-decision by Varun, each with a case-specific written rationale in
-`data/human_adjudication_43cases.csv`. The remaining 157/200 are AI-labeled, confirmed
-only by agreement between two independent AI passes -- not individually verified by a
-human. This is a real improvement over a single unreviewed AI pass, but it is not yet
-"every label hand-built by the candidate," which is what the assignment literally asks
-for. `data/REVIEW_2_blind_30.csv` (an independent, blind, from-scratch human relabel of
-30 cases) is the remaining step needed for a genuine human-vs-AI Cohen's kappa, as
-opposed to the adjudication-based agreement numbers above, which are conditioned on
-having already seen both AI passes' outputs.
+## Genuine human-vs-AI agreement (30-case independent blind relabel)
+
+Separately from the adjudication above, Varun independently blind-labeled 30 golden-set
+cases from scratch -- `customer_text` only, no AI labels of any kind visible --
+producing `data/golden_human_blind_30.jsonl`. This is the first genuine human-vs-AI
+comparison in this project (the adjudication above is human-vs-AI *conditioned on
+having already seen both AI outputs*, which is a different, easier task). Result
+(`reports/human_vs_ai_agreement.json`):
+
+- vs. the original primary AI pass: 80% exact / Cohen's kappa 0.69
+- vs. an older, independently-generated 30-case AI second pass: 80% exact / kappa 0.70
+- vs. `data/ai_blind_secondpass_full200.jsonl` (the newest AI pass): **100% exact (30/30,
+  both fields)** -- disclosed but explicitly **not** used. This rate is statistically
+  inconsistent with the ~80% agreement against the other two independent AI passes on
+  the identical 30 cases; asked directly, the labeler confirmed the work was done
+  independently, but a result this improbable is excluded from the reported kappa
+  regardless of cause (see `REPORT.md` decision log #18). The two ~80% comparisons above
+  are used as this project's genuine human-vs-AI agreement figure.
+
+## Genuine human judge-calibration scores
+
+`data/REVIEW_3_blind_40_judge.csv` -- Varun scored 40 drafted replies 1-5 for quality,
+blind to the LLM judge's own scores for the same replies. These values now populate
+`reports/judge_calibration_template.jsonl`'s `human_overall_score_1to5`, replacing an
+earlier AI-filled placeholder. Result: judge mean 3.975 vs. human mean 3.35 (a genuine
+~0.6-point leniency gap), quadratic-weighted kappa 0.32 -- see `REPORT.md` failure mode
+#4 and "what's misleading" #3.
+
+## Current disclosure
+
+43/200 (21.5%) of the golden labels reflect a genuine human decision by Varun, each
+with a case-specific written rationale in `data/human_adjudication_43cases.csv`. The
+remaining 157/200 are AI-labeled, confirmed only by agreement between two independent
+AI passes -- not individually verified by a human. Separately, a fully independent
+30-case human relabel gives a genuine (not adjudication-conditioned) human-vs-AI
+agreement figure of 80%/kappa ~0.7. Together, this is real, disclosed progress toward
+"hand-labeled by the candidate," though it stops short of every one of the 200 labels
+being independently human-verified -- see `REPORT.md` section 5, item 1, for what a
+further week would add.
