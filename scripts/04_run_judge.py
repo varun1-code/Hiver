@@ -41,7 +41,14 @@ def main():
                     done[r["case_id"]] = r
         print(f"Judging {tier}: {len(rows)} rows -> {out_path} ({len(done)} already done)")
 
+        in_scope_ids = {row["case_id"] for row in rows}
         with open(out_path, "w", encoding="utf-8") as f:
+            # Preserve rows already judged for cases outside the current
+            # --limit slice, so a smaller/quick-demo run never truncates a
+            # larger existing results file.
+            for case_id, row in done.items():
+                if case_id not in in_scope_ids:
+                    f.write(json.dumps(row, ensure_ascii=False) + "\n")
             for row in rows:
                 if row.get("error"):
                     continue

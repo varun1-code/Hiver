@@ -76,7 +76,14 @@ def main():
         todo = [c for c in cases if c["case_id"] not in done]
         print(f"\nRunning tier: {tier_name} -> {out_path} ({len(done)} already done, {len(todo)} to run)")
 
+        in_scope_ids = {c["case_id"] for c in cases}
         with open(out_path, "w", encoding="utf-8") as f:
+            # Preserve rows already done for cases outside the current --limit
+            # slice, so a smaller/quick-demo run never truncates a larger
+            # existing results file.
+            for case_id, row in done.items():
+                if case_id not in in_scope_ids:
+                    f.write(json.dumps(row, ensure_ascii=False) + "\n")
             for c in cases:
                 if c["case_id"] in done:
                     f.write(json.dumps(done[c["case_id"]], ensure_ascii=False) + "\n")
