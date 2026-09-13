@@ -33,13 +33,20 @@ pip install -r requirements.txt
 cp .env.example .env   # then fill in HIVE_API_KEY (or set LLM_PROVIDER=gemini + GEMINI_API_KEY)
 ```
 
-Requires the Kaggle dataset at `reports/twcs/twcs.csv`. If you don't already have it:
+Only needed if you want to re-run `scripts/01_prepare_dataset.py` from the raw dump
+(the quick demo below does re-run it) -- `kagglehub` is already in `requirements.txt`:
 ```powershell
 python -c "import kagglehub; print(kagglehub.dataset_download('thoughtvector/customer-support-on-twitter'))"
 # then copy the twcs.csv it downloads to reports/twcs/twcs.csv
 ```
 
 ## Reproduce in under 15 minutes (quick demo)
+
+**The committed artifacts reproduce the reported evaluation metrics offline.**
+Re-running live model inference requires a valid Hive API key and, since it's a live
+LLM call, may produce somewhat different outputs than the committed
+`reports/*.jsonl` -- see "Note on resume behavior" below for exactly what re-runs
+vs. replays.
 
 ```powershell
 python scripts\01_prepare_dataset.py         # ~1-2 min: builds cases from the raw CSV
@@ -104,10 +111,13 @@ AI-consensus label and confirmed/corrected), but at three different review depth
 claim**, since only the 30-case blind subset supports a genuine human-vs-AI agreement
 number. `data/LABELING_NOTES.md` has the rubric and hard-case notes.
 
-## Decision log
+## Report and decision log
 
-See `REPORT.md` for the full report; the condensed decision log is in
-`REPORT.md#decision-log`.
+`REPORT.md` is the required (<=6-page) submission report: problem framing, results vs.
+baselines, top-5 failure analysis, "what's misleading," next steps, and a 14-item
+decision log. `APPENDIX.md` has the full methodology behind every section, expanded
+detail, and the complete 20-item decision log -- read it for anything `REPORT.md`
+summarizes down or links out to.
 
 ## Repository layout
 

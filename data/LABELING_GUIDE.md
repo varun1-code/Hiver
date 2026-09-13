@@ -68,7 +68,7 @@ having already seen both AI outputs*, which is a different, easier task). Result
   inconsistent with the ~80% agreement against the other two independent AI passes on
   the identical 30 cases; asked directly, the labeler confirmed the work was done
   independently, but a result this improbable is excluded from the reported kappa
-  regardless of cause (see `REPORT.md` decision log #18). The two ~80% comparisons above
+  regardless of cause (see `APPENDIX.md` decision log #18). The two ~80% comparisons above
   are used as this project's genuine human-vs-AI agreement figure.
 
 ## Genuine human judge-calibration scores
@@ -88,7 +88,7 @@ already agreed with each other (that's exactly why they weren't among the 43
 disagreements), so Varun reviewed each against that AI-consensus label rather than
 blind -- confirm or correct, with a specific written reason per case either way
 (`data/human_review_remaining_134cases.csv`). Outcome: 131 confirmed, 3 corrected
-(cases `2608614`, `559184`, `1010032` -- see `REPORT.md` decision log #20 for detail).
+(cases `2608614`, `559184`, `1010032` -- see `APPENDIX.md` decision log #20 for detail).
 This is a genuine human decision on every row, but it is *review of a suggestion*, not
 blind labeling -- a materially easier task than the 30-case blind pass, so the low
 3/134 correction rate should be read as "review confirmed AI-consensus labels were
@@ -102,7 +102,7 @@ been used to compute the human-vs-AI kappa above -- it was never merged back int
 `golden.jsonl` itself, so the 23 cases in that subset not also in the 43-case
 adjudication still held pure-AI values in the master file even though Varun had
 genuinely labeled them. Fixed by merging those 23 decisions in before finalizing
-anything -- see `REPORT.md` decision log #20.
+anything -- see `APPENDIX.md` decision log #20.
 
 ## Current disclosure
 
@@ -123,6 +123,7 @@ percentage:
 
 This satisfies "hand-labeled examples you built yourself" in that every one of the 200
 labels reflects a human decision, but it is not the claim "all 200 were blind-labeled
-independently" -- only 15% of the set was. `REPORT.md` section 5, item 1, proposes the
-remaining honest gap: a second independent human, blind, on the same 30-case subset,
+independently" -- only 15% of the set was. `REPORT.md` section 5 (and `APPENDIX.md`
+section 5, item 1, in full) proposes the remaining honest gap: a second independent
+human, blind, on the same 30-case subset,
 to get a genuine human-vs-human kappa this project doesn't yet have.
