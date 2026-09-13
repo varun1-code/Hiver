@@ -373,9 +373,9 @@ This section is mandatory, and here is the honest list for this project:
 14. **Golden-set and judge-calibration labels were initially produced by an AI
     assistant reading text directly, not humans**, and this was disclosed rather than
     presented as genuine independent human labeling -- see `data/LABELING_GUIDE.md`.
-    (Superseded in part by decision log #17/#18: 43/200 golden labels and the 30-case
-    agreement subset are now genuinely human-decided; see "what's misleading" #2/#3 for
-    the current, precise breakdown.)
+    (Superseded by decision log #17/#18/#20: all 200/200 golden labels now carry a
+    genuine human decision, at three different review depths; see "what's misleading"
+    #2/#3 for the current, precise breakdown.)
 15. **The LLM backend was switched from Gemini to TheHive.ai mid-project, and this is
     the single biggest engineering-judgment story in this project.** Gemini's free-tier
     `gemini-flash-latest` turned out to be capped at 20 REQUESTS PER DAY (not per
