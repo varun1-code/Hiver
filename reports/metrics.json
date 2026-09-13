@@ -3,9 +3,9 @@
   "tiers": {
     "trivial": {
       "n": 200,
-      "intent_accuracy": 0.03,
-      "intent_macro_f1": 0.0073,
-      "escalation_accuracy": 0.815,
+      "intent_accuracy": 0.045,
+      "intent_macro_f1": 0.0108,
+      "escalation_accuracy": 0.755,
       "escalation_precision_for_escalate_class": 0.0,
       "escalation_recall_for_escalate_class": 0.0,
       "escalation_f1_for_escalate_class": 0.0,
@@ -15,24 +15,24 @@
     },
     "simple": {
       "n": 200,
-      "intent_accuracy": 0.405,
-      "intent_macro_f1": 0.4029,
-      "escalation_accuracy": 0.765,
-      "escalation_precision_for_escalate_class": 0.4242,
-      "escalation_recall_for_escalate_class": 0.7568,
-      "escalation_f1_for_escalate_class": 0.5437,
+      "intent_accuracy": 0.4,
+      "intent_macro_f1": 0.401,
+      "escalation_accuracy": 0.735,
+      "escalation_precision_for_escalate_class": 0.4697,
+      "escalation_recall_for_escalate_class": 0.6327,
+      "escalation_f1_for_escalate_class": 0.5391,
       "auto_handled_fraction": 0.67,
       "judge_mean_overall_score": 3.43,
       "n_judged": 200
     },
     "llm": {
       "n": 200,
-      "intent_accuracy": 0.775,
-      "intent_macro_f1": 0.7036,
-      "escalation_accuracy": 0.845,
-      "escalation_precision_for_escalate_class": 0.5652,
-      "escalation_recall_for_escalate_class": 0.7027,
-      "escalation_f1_for_escalate_class": 0.6265,
+      "intent_accuracy": 0.815,
+      "intent_macro_f1": 0.7521,
+      "escalation_accuracy": 0.815,
+      "escalation_precision_for_escalate_class": 0.6304,
+      "escalation_recall_for_escalate_class": 0.5918,
+      "escalation_f1_for_escalate_class": 0.6105,
       "auto_handled_fraction": 0.77,
       "judge_mean_overall_score": 3.86,
       "n_judged": 200
@@ -51,54 +51,54 @@
     ],
     "matrix": [
       [
-        85,
+        84,
         2,
-        11,
+        5,
         0,
-        3,
+        2,
         0,
         2,
         1
       ],
       [
-        4,
-        9,
-        0,
-        0,
-        1,
-        0,
         2,
-        0
-      ],
-      [
+        7,
         0,
-        0,
-        10,
         1,
         0,
         0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        16,
+        0,
+        0,
+        0,
         0,
         0
       ],
       [
-        3,
-        0,
+        2,
+        1,
         0,
         15,
         0,
         0,
-        1,
+        0,
         0
       ],
       [
+        1,
+        0,
+        1,
+        0,
+        12,
         0,
         0,
-        0,
-        0,
-        10,
-        0,
-        0,
-        1
+        0
       ],
       [
         0,
@@ -108,16 +108,6 @@
         3,
         11,
         3,
-        0
-      ],
-      [
-        2,
-        0,
-        1,
-        0,
-        0,
-        0,
-        12,
         1
       ],
       [
@@ -127,8 +117,18 @@
         0,
         0,
         0,
+        14,
+        0
+      ],
+      [
+        4,
+        1,
         0,
-        3
+        0,
+        0,
+        0,
+        0,
+        4
       ]
     ]
   },
@@ -142,8 +142,8 @@
   "labeler_agreement": {
     "n": 30,
     "intent_exact_agreement": 0.8,
-    "intent_cohen_kappa": 0.6913,
-    "escalation_exact_agreement": 1.0,
-    "escalation_cohen_kappa": 1.0
+    "intent_cohen_kappa": 0.7049,
+    "escalation_exact_agreement": 0.9333,
+    "escalation_cohen_kappa": 0.8148
   }
 }

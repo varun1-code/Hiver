@@ -2,7 +2,8 @@
 
 1. majority   -- trivial baseline, always predicts one constant label.
 2. keyword    -- simple baseline, deterministic keyword/regex rules.
-3. llm        -- the "real" system, Gemini with the taxonomy in-context.
+3. llm        -- the "real" system, the configured LLM (see config.LLM_PROVIDER;
+   Hive by default, Gemini optional) with the taxonomy in-context.
 
 See config.INTENTS for the taxonomy and its rationale.
 """

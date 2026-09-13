@@ -21,28 +21,44 @@ distribution is NOT representative of true @AppleSupport traffic volume.
 ## Labeling
 
 Every row was labeled independently from the raw `customer_text` alone, using the
-taxonomy in `src/config.py`. Two passes were run for exactly the purpose of computing
-inter-rater agreement:
+taxonomy in `src/config.py`. The final `data/golden.jsonl` is the product of three
+passes, run specifically so disagreement could be measured and routed to a human
+rather than accepted on either AI pass's say-so:
 
-1. **Primary pass** (all 200 rows) -> `data/golden.jsonl`. Rubric applied: pick the most
-   specific/actionable intent (avoid `complaint_feedback` unless there's truly no
-   actionable ask); `gold_auto_handle=false` whenever the message involves money,
-   account security/identity, safety/legal content, an explicit request for a human, or
-   is too ambiguous to act on confidently.
-2. **Second pass** (first 30 rows only, independently, blind to the primary labels and
-   to the keyword baseline's suggestions) -> `data/golden_second_labeler_subset.jsonl`.
-   Agreement (Cohen's kappa, both for intent and for the escalate/auto-handle call) is
-   computed in `scripts/06_evaluate.py` and reported as `labeler_agreement` in
-   `reports/metrics.json`.
+1. **Primary AI pass** (all 200 rows). Rubric applied: pick the most specific/
+   actionable intent (avoid `complaint_feedback` unless there's truly no actionable
+   ask); `gold_auto_handle=false` whenever the message involves money, account
+   security/identity, safety/legal content, an explicit request for a human, or is too
+   ambiguous to act on confidently.
+2. **Independent blind second AI pass** (all 200 rows, `data/ai_blind_secondpass_full200.jsonl`)
+   -- given only `case_id` + `customer_text`, no visibility into the primary pass's
+   labels. Compared against the primary pass (frozen at
+   `data/golden_ai_primary_pre_adjudication.jsonl` so this comparison stays
+   reproducible even after later edits): **157/200 (78.5%) agreed exactly on both
+   intent and auto-handle**; intent Cohen's kappa 0.799, escalation kappa 0.781
+   (`reports/ai_pass_agreement_full200.json`) -- a real AI-vs-AI inter-rater number,
+   computed on the full golden set rather than a 30-case sample.
+3. **Human adjudication of the 43 disagreement/ambiguous cases**
+   (`data/human_adjudication_43cases.csv`) -- Varun personally read each of the 43
+   cases where the two AI passes disagreed or one flagged ambiguity, and made the
+   final call with his own written rationale per case (not a template). Outcome: sided
+   with the fresh second pass on 32, with the original draft on 2, both passes already
+   agreed on 8 of the 43 (flagged for ambiguity alone), and sided with **neither** AI
+   pass on 1 (case `1861359`, a post-update inability to make phone calls -- judged
+   more consequential than either AI pass's call).
 
-**Important disclosure**: both labeling passes in this repository were produced by an
-AI assistant reading each tweet directly and applying the rubric above -- not by two
-independent human annotators. This is called out explicitly because the assignment
-asks for a "hand-labelled" set the candidate built themselves. Treat `data/golden.jsonl`
-as a high-quality *draft* golden set and a working demonstration of the full evaluation
-pipeline (sampling -> labeling -> agreement -> metrics), not as a substitute for a
-human doing a real pass before this is submitted as final work. Before submission,
-a human should at minimum: (a) spot-check the ambiguous case_ids flagged in
-`data/LABELING_NOTES.md`, and (b) re-label the 30-row calibration subset independently
-to get a genuine human-vs-AI-judge agreement number to replace the AI-vs-AI proxy
-currently in `reports/metrics.json`.
+The 30-row AI-vs-AI subset (`data/golden_second_labeler_subset.jsonl`) and its
+agreement stat in `reports/metrics.json`'s `labeler_agreement` predate this process
+and are left as an independent check (it wasn't used to build or adjudicate anything
+above).
+
+**Current disclosure**: 43/200 (21.5%) of the golden labels reflect a genuine human
+decision by Varun, each with a case-specific written rationale in
+`data/human_adjudication_43cases.csv`. The remaining 157/200 are AI-labeled, confirmed
+only by agreement between two independent AI passes -- not individually verified by a
+human. This is a real improvement over a single unreviewed AI pass, but it is not yet
+"every label hand-built by the candidate," which is what the assignment literally asks
+for. `data/REVIEW_2_blind_30.csv` (an independent, blind, from-scratch human relabel of
+30 cases) is the remaining step needed for a genuine human-vs-AI Cohen's kappa, as
+opposed to the adjudication-based agreement numbers above, which are conditioned on
+having already seen both AI passes' outputs.

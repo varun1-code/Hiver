@@ -1,0 +1,7 @@
+{
+  "n": 200,
+  "intent_exact_agreement": 0.855,
+  "intent_cohen_kappa": 0.7986,
+  "escalation_exact_agreement": 0.925,
+  "escalation_cohen_kappa": 0.781
+}

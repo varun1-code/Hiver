@@ -3,8 +3,9 @@
 1. template_reply -- simple baseline: copy the closest retrieved historical
    reply verbatim (only above a similarity floor), else a safe generic
    fallback. No LLM call, fully deterministic.
-2. llm_rag_reply  -- main system: Gemini drafts a new reply grounded in the
-   top retrieved historical resolutions, in the brand's voice.
+2. llm_rag_reply  -- main system: the configured LLM (see config.LLM_PROVIDER;
+   Hive by default, Gemini optional) drafts a new reply grounded in the top
+   retrieved historical resolutions, in the brand's voice.
 """
 from src.llm_client import generate
 from src.retrieval import RetrievedCase

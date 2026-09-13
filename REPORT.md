@@ -59,18 +59,22 @@ All numbers are on the full 200-case golden set (`reports/metrics.json`).
 
 | Tier | Intent accuracy | Intent macro-F1 | Escalation accuracy | Escalation precision (escalate class) | Escalation recall (escalate class) | Escalation F1 (escalate class) | Mean judge score (1-5) |
 |---|---|---|---|---|---|---|---|
-| trivial | 3.0% | 0.007 | 81.5% | 0.0 | 0.0 | 0.0 | n/a (constant reply) |
-| simple (keyword) | 40.5% | 0.403 | 76.5% | 0.424 | 0.757 | 0.544 | 3.43 |
-| **llm (main)** | **77.5%** | **0.704** | **84.5%** | **0.565** | **0.703** | **0.627** | **3.86** |
+| trivial | 4.5% | 0.011 | 75.5% | 0.0 | 0.0 | 0.0 | n/a (constant reply) |
+| simple (keyword) | 40.0% | 0.401 | 73.5% | 0.470 | 0.633 | 0.539 | 3.43 |
+| **llm (main)** | **81.5%** | **0.752** | **81.5%** | **0.630** | **0.592** | **0.611** | **3.86** |
 
-The main system roughly doubles the simple baseline's intent accuracy and macro-F1, and
-improves escalation F1 by ~15 points. Two numbers need immediate context, though (see
-"what's misleading" for the full list):
+These numbers reflect the golden set *after* the human-adjudication pass described
+below (43/200 labels personally corrected) -- they moved from an earlier, less-reviewed
+77.5%/84.5%/0.627 to these figures. The movement is a byproduct of fixing ground truth,
+not of tuning the model, and it happened to go up here; it could just as easily have
+gone down, and the report would say so either way (see decision log #18). The main
+system roughly doubles the simple baseline's intent accuracy and macro-F1. Two numbers
+need immediate context, though (see "what's misleading" for the full list):
 
-- **Trivial's 81.5% escalation "accuracy" is a base-rate artifact**, not a capability:
-  81.5% of the golden set is gold-labeled `auto_handle=true`, so a policy of "always
-  auto-handle, no logic at all" scores 81.5% while having 0 precision/recall on the
-  escalate class -- i.e. it would auto-send a reply to every one of the 37 cases (18.5%)
+- **Trivial's 75.5% escalation "accuracy" is a base-rate artifact**, not a capability:
+  75.5% of the golden set is gold-labeled `auto_handle=true`, so a policy of "always
+  auto-handle, no logic at all" scores 75.5% while having 0 precision/recall on the
+  escalate class -- i.e. it would auto-send a reply to every one of the 49 cases (24.5%)
   that a human said needed review, including the safety-relevant case described in
   failure mode #1 below. Escalation accuracy alone is not a safe headline metric; the
   escalate-class F1 is the number that actually matters here.
@@ -80,12 +84,17 @@ improves escalation F1 by ~15 points. Two numbers need immediate context, though
   -> `judge_human_agreement`, and see #4 below). Read `judge_mean_overall_score` as
   "the judge's opinion," not "reply quality" directly.
 
-**Inter-rater reliability**: the primary golden-set labeler and an independent
-second-pass labeler agreed on intent for 24/30 (80%) of overlapping cases (Cohen's
-kappa 0.69, "substantial" agreement) and on the escalate/auto-handle call for 30/30
-(kappa 1.0). **Judge-vs-human agreement** on the 40-case calibration subset: 22.5% exact
-match, 75% within one point, quadratic-weighted kappa 0.32 ("fair"), Spearman rho 0.51
-(moderate positive correlation) -- see #4 below for what this does and doesn't support.
+**Inter-rater reliability, updated**: an independent blind second AI pass over the full
+200-case golden set agreed with the original primary pass on 157/200 (78.5%) of cases
+(intent Cohen's kappa 0.799, escalation kappa 0.781 -- `reports/ai_pass_agreement_full200.json`).
+The 43 disagreement/ambiguous cases were then personally adjudicated by Varun, each
+with a written case-specific rationale (`data/human_adjudication_43cases.csv`); this is
+what changed the headline numbers above. Separately, a 30-case AI-vs-AI subset
+(pre-dating this adjudication process, kept as an independent check) shows 80% exact
+intent agreement (kappa 0.70) and 93.3% escalation agreement (kappa 0.81). **Judge-vs-
+human agreement** on the 40-case calibration subset: 22.5% exact match, 75% within one
+point, quadratic-weighted kappa 0.32 ("fair"), Spearman rho 0.51 (moderate positive
+correlation) -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
 
 ## 3. Failure analysis (top 5, with real examples)
 
@@ -115,14 +124,17 @@ match, 75% within one point, quadratic-weighted kappa 0.32 ("fair"), Spearman rh
    and the escalation gate should not be trusted to catch this failure mode as built.
 3. **`software_bug_after_update` vs. `hardware_malfunction` confusion**, exactly as
    predicted from the golden-set labeling notes. The confusion matrix
-   (`reports/metrics.json`) shows 11 of 96 true `software_bug_after_update` cases
+   (`reports/metrics.json`) shows 5 of 96 true `software_bug_after_update` cases
    predicted as `hardware_malfunction` -- the largest single confusion cell. Example
-   (case `724019`): *"What's happening to my battery? It suddenly changes its
-   percentage when I put it to charge/drops to 1% when in use #iPhone"* -- no update
-   mentioned, so the model reasonably reads it as hardware, but historically this
-   pattern is very often a software/calibration bug. This is a genuinely hard case for
-   any classifier working from text alone (even the human-equivalent labeling pass
-   flagged this exact ambiguity as its top "underspecified taxonomy" issue).
+   (case `1835143`): *"iPhone 6s+ turned into Headphone mode, no headphone inserted, BT
+   off, restart didnt help. Speaker works in phone calls."* -- no update mentioned, so
+   the model reasonably reads it as a hardware/speaker fault, but the gold label treats
+   this as a software state bug given the symptom pattern. This is a genuinely hard case
+   for any classifier working from text alone (`data/LABELING_NOTES.md` flags this exact
+   case, and case `724019`, as ambiguous hardware-vs-software calls; `724019` was in fact
+   one of the 43 human-adjudicated cases and its gold label was flipped to
+   `hardware_malfunction` on review, which is itself evidence of how genuinely
+   borderline this class boundary is).
 4. **The LLM judge is measurably more lenient than human-equivalent scoring**, and
    agreement is weaker than the headline number suggests: quadratic-weighted kappa 0.32
    ("fair," not "good"), only 22.5% exact match, though 75% land within 1 point and the
@@ -137,9 +149,9 @@ match, 75% within one point, quadratic-weighted kappa 0.32 ("fair"), Spearman rh
    intent is real.** The keyword baseline defaults to `complaint_feedback` whenever no
    rule fires, which is why it was capturing ~74% of raw eval-pool traffic before golden-
    set sampling was deliberately capped to counteract it (see `scripts/02_sample_golden.py`).
-   Against the actual gold labels, only 6/200 (3%) of the golden set is genuinely
+   Against the actual gold labels, only 9/200 (4.5%) of the golden set is genuinely
    `complaint_feedback`. This isn't a subtle finding, but it's the clearest evidence that
-   the "simple" tier is a real baseline and not a strawman: its 40.5% intent accuracy is
+   the "simple" tier is a real baseline and not a strawman: its 40.0% intent accuracy is
    earned despite this bias, not because of it, since the golden set was specifically
    built to not reward the catch-all.
 
@@ -147,24 +159,31 @@ match, 75% within one point, quadratic-weighted kappa 0.32 ("fair"), Spearman rh
 
 This section is mandatory, and here is the honest list for this project:
 
-1. **77.5% intent accuracy is not a traffic-weighted number.** Golden-set sampling was
+1. **81.5% intent accuracy is not a traffic-weighted number.** Golden-set sampling was
    deliberately capped at 35/stratum (by keyword-predicted intent) specifically to avoid
    the keyword baseline's catch-all bucket dominating the set (see
    `scripts/02_sample_golden.py`). The corrected gold labels ended up concentrated in
    `software_bug_after_update` anyway (96/200 = 48%) -- which the `llm` tier handles
-   well (85/96 = 88.5% recall on that class per the confusion matrix) -- so the headline
+   well (84/96 = 87.5% recall on that class per the confusion matrix) -- so the headline
    number is somewhat flattered by the golden set's actual composition, not purely by
    sampling design. A traffic-weighted number, if the true intent mix differs from this
    golden set's, could look meaningfully different.
-2. **The golden labels were produced by an AI assistant reading each tweet, not by two
-   independent human annotators**, despite the assignment asking for a hand-labeled set
-   -- disclosed in full in `data/LABELING_GUIDE.md`. The 0.69 intent kappa and 1.0
-   escalation kappa reported between the "primary" and "second" labeling passes are
-   agreement between two AI reasoning passes, not two humans. It's evidence the rubric
-   is applicable consistently, not evidence the labels match objective truth. **Before
-   this is submitted, a real human should re-label at least the 30-case overlap subset
-   and the ambiguous cases flagged in `data/LABELING_NOTES.md`.**
-3. **The judge-human agreement numbers are an AI-vs-AI proxy for the same reason**
+2. **157/200 (78.5%) of the golden labels are still AI-labeled, confirmed only by
+   agreement between two independent AI passes -- not individually verified by a
+   human.** The other 43/200 (21.5%) reflect Varun's own adjudication, each with a
+   written case-specific rationale (`data/human_adjudication_43cases.csv`), made after
+   seeing where the two AI passes disagreed or flagged ambiguity. This is real progress
+   over a single unreviewed AI pass (it directly changed the headline numbers in section
+   2), but it is not the same claim as "every one of the 200 labels was independently
+   hand-built." The 0.799 intent / 0.781 escalation kappa between the two AI passes is
+   evidence the rubric is applied consistently by an AI reader, not evidence the labels
+   match objective truth -- and the 43 human corrections show the rubric-applied-
+   consistently labels were themselves sometimes wrong. **`data/REVIEW_2_blind_30.csv`,
+   an independent from-scratch human relabel with no AI labels visible, is still needed
+   for a genuine human-vs-AI kappa** (as opposed to the adjudication numbers above,
+   which are conditioned on having already seen both AI outputs). Full methodology:
+   `data/LABELING_GUIDE.md`.
+3. **The judge-human agreement numbers are still an AI-vs-AI proxy**
    (`reports/judge_calibration_template.jsonl`'s `human_overall_score_1to5` was filled by
    an independent AI pass, not a person -- see `data/LABELING_GUIDE.md`). That said, this
    proxy calibration surfaced something real regardless of who scored it: a fair-not-good
@@ -172,13 +191,15 @@ This section is mandatory, and here is the honest list for this project:
    failure mode #4). A genuine human pass might show a different gap, but there's no
    reason to expect it would show *no* gap -- LLM judges are known to skew lenient.
 4. **Escalation precision/recall on 200 examples has wide uncertainty**, especially for
-   the minority "escalate" class (37/200 = 18.5% gold-labeled base rate). The `llm` tier's
-   escalation precision (0.565) means roughly 4 in 10 of its escalations are cases a
-   human wouldn't have flagged -- costly in reviewer time, though the failure-mode
-   analysis suggests the more dangerous error (auto-handling something that should have
-   escalated) is under-counted by this metric, since it only sees cases where escalation
-   *should* have happened per gold labels, not cases where a *specific, novel* risk
-   phrase (like "burned and shocked") wasn't yet in the keyword list at all.
+   the minority "escalate" class (49/200 = 24.5% gold-labeled base rate, up from an
+   earlier 18.5% once the 43-case human adjudication corrected several under-escalated
+   labels). The `llm` tier's escalation precision (0.630) means roughly 4 in 10 of its
+   escalations are cases a human wouldn't have flagged -- costly in reviewer time,
+   though the failure-mode analysis suggests the more dangerous error (auto-handling
+   something that should have escalated) is under-counted by this metric, since it only
+   sees cases where escalation *should* have happened per gold labels, not cases where a
+   *specific, novel* risk phrase (like "burned and shocked") wasn't yet in the keyword
+   list at all.
 5. **The dataset itself only contains what happened publicly on Twitter.** It excludes
    DMs, where AppleSupport actually resolves account-security and billing cases. So even
    a perfect score here reflects public triage behavior, not the substance of how those
@@ -232,6 +253,29 @@ This section is mandatory, and here is the honest list for this project:
    cases and route them to escalation with a clear reason, rather than silently
    producing a low-quality classification (observed in the golden set -- e.g. case
    `105396`, a Spanish-language bug report).
+9. **Calibrate confidence instead of trusting it raw**: `llm_classifier`'s confidence
+   is self-reported by the same call that produced the label, and nothing here checks
+   whether "0.8" actually means ~80% correct. Before using it as an escalation input
+   (as `escalation.decide` currently does via `CONFIDENCE_FLOOR`), bucket golden-set
+   predictions by predicted confidence and check observed accuracy per bucket; if it's
+   not well-calibrated, drop it as a safety signal and lean on retrieval similarity and
+   the rule-based checks instead.
+10. **Move retrieval from TF-IDF to embeddings.** `CaseRetriever` is lexical
+    (`TfidfVectorizer`, `stop_words="english"`), so it structurally misses paraphrases
+    and can't handle non-English text at all. A hybrid approach -- TF-IDF for a fast
+    top-20, then a sentence-embedding rerank to top-3 -- would likely fix a chunk of
+    the "not grounded" failures without discarding the cheap lexical pass entirely.
+11. **Add a run manifest.** Predictions are cached and resumed by `case_id` alone
+    (see resume logic in `03_run_pipeline.py`/`04_run_judge.py`), with nothing tying a
+    cached row to the prompt/model/threshold version that produced it. A
+    `run_manifest.json` per run (git SHA, `LLM_PROVIDER`/model, prompt text hash,
+    dataset hashes, thresholds, timestamp) plus a `run_id` on each record would make
+    stale-cache bugs impossible instead of just unlikely.
+12. **Basic test suite + CI.** There are currently no automated tests. At minimum:
+    unit tests for `escalation.decide`'s branches, the keyword classifier's rule
+    order, `retrieval.CaseRetriever`'s similarity floor behavior, and a malformed-JSON
+    fallback path in `llm_client`; wired into GitHub Actions as a no-API smoke test on
+    every push.
 
 ## 6. Decision log
 
@@ -312,3 +356,31 @@ This section is mandatory, and here is the honest list for this project:
     something to merely footnote. This is disclosed explicitly rather than silently
     fixed, because the fact that it shipped once is itself evidence about the
     keyword-list approach's fragility (see "what I'd do next" #3).
+17. **43/200 golden labels were personally re-adjudicated by Varun after a second,
+    independent, blind AI pass was run over the full golden set specifically to surface
+    disagreements.** Process: (a) a fresh AI pass read only `case_id`+`customer_text`
+    for all 200 cases, blind to the primary pass's labels
+    (`data/ai_blind_secondpass_full200.jsonl`); (b) it agreed with the original primary
+    pass on 157/200 (kappa 0.799 intent, 0.781 escalation --
+    `reports/ai_pass_agreement_full200.json`, frozen against
+    `data/golden_ai_primary_pre_adjudication.jsonl` so the comparison stays reproducible
+    even after step (c) edits `golden.jsonl`); (c) the 43 disagreement/ambiguous cases
+    were handed to Varun with both AI passes' calls and rationale, and he made the final
+    decision on each with his own written reasoning
+    (`data/human_adjudication_43cases.csv`) -- siding with the fresh pass on 32, the
+    original draft on 2, both agreeing already on 8, and neither on 1 (case `1861359`,
+    judged more serious than either AI call). This is disclosed precisely as what it is
+    -- 21.5% of the golden set genuinely human-decided, 78.5% AI-confirmed-by-agreement
+    -- rather than rounded up to "human-labeled," per "what's misleading" #2. An earlier
+    attempt at this (a first CSV where a human column was auto-filled to match the AI
+    draft with templated notes on ~98% of rows) was caught and explicitly discarded
+    rather than used, precisely because it would have misrepresented AI output as human
+    review.
+18. **A second external review (post-submission-draft) confirmed the priority order of
+    "what I'd do next"** -- human-label validation, a faithfulness gate, and a dedicated
+    safety classifier as the top three -- and surfaced three items not yet written down:
+    confidence calibration, embedding-based retrieval, and run manifests for cache
+    safety (now items 9-11 above). Its other suggestions (agent inbox/webhook, PII
+    redaction pipeline, multi-language routing infra) were left out of "what I'd do
+    next" as out of scope for a take-home's one-week horizon rather than incorporated,
+    to avoid turning an evaluation project into an open-ended platform build.

@@ -5,9 +5,10 @@ outputs are directly comparable in evaluate.py.
   This is the "what if we shipped nothing" floor -- it exists specifically
   to make the escalation logic's value legible (see decision log / report).
 - simple:  keyword classifier + retrieval-copy reply + rule-based escalation.
-- llm:     Gemini classifier + retrieval-grounded Gemini reply + the same
-  rule-based escalation (escalation logic is shared on purpose -- it is the
-  one component we do NOT want to vary by system tier, see escalation.py).
+- llm:     LLM classifier + retrieval-grounded LLM reply (Hive by default,
+  Gemini optional -- see config.LLM_PROVIDER) + the same rule-based
+  escalation (escalation logic is shared on purpose -- it is the one
+  component we do NOT want to vary by system tier, see escalation.py).
 """
 from src.classifiers import majority_classifier, keyword_classifier, llm_classifier
 from src.escalation import decide
