@@ -15,8 +15,8 @@
     },
     "simple": {
       "n": 200,
-      "intent_accuracy": 0.4,
-      "intent_macro_f1": 0.401,
+      "intent_accuracy": 0.39,
+      "intent_macro_f1": 0.3907,
       "escalation_accuracy": 0.735,
       "escalation_precision_for_escalate_class": 0.4697,
       "escalation_recall_for_escalate_class": 0.6327,
@@ -27,8 +27,8 @@
     },
     "llm": {
       "n": 200,
-      "intent_accuracy": 0.815,
-      "intent_macro_f1": 0.7521,
+      "intent_accuracy": 0.805,
+      "intent_macro_f1": 0.7457,
       "escalation_accuracy": 0.815,
       "escalation_precision_for_escalate_class": 0.6304,
       "escalation_recall_for_escalate_class": 0.5918,
@@ -51,7 +51,7 @@
     ],
     "matrix": [
       [
-        84,
+        82,
         2,
         5,
         0,
@@ -71,7 +71,7 @@
         0
       ],
       [
-        1,
+        2,
         0,
         16,
         0,
@@ -111,7 +111,7 @@
         1
       ],
       [
-        2,
+        3,
         0,
         1,
         0,

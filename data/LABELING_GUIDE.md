@@ -80,14 +80,49 @@ earlier AI-filled placeholder. Result: judge mean 3.975 vs. human mean 3.35 (a g
 ~0.6-point leniency gap), quadratic-weighted kappa 0.32 -- see `REPORT.md` failure mode
 #4 and "what's misleading" #3.
 
+## The remaining 134 cases (AI-consensus review)
+
+The 134 cases outside both the 43-adjudicated and 30-blind-labeled sets (200 - 66
+unique = 134) still needed a human decision. For these, both independent AI passes had
+already agreed with each other (that's exactly why they weren't among the 43
+disagreements), so Varun reviewed each against that AI-consensus label rather than
+blind -- confirm or correct, with a specific written reason per case either way
+(`data/human_review_remaining_134cases.csv`). Outcome: 131 confirmed, 3 corrected
+(cases `2608614`, `559184`, `1010032` -- see `REPORT.md` decision log #20 for detail).
+This is a genuine human decision on every row, but it is *review of a suggestion*, not
+blind labeling -- a materially easier task than the 30-case blind pass, so the low
+3/134 correction rate should be read as "review confirmed AI-consensus labels were
+mostly already right, under a review methodology biased toward confirming," not as an
+independent accuracy measurement of those 134 labels.
+
+**Process note, disclosed rather than quietly fixed**: while merging this final batch,
+a sanity check (counting `golden.jsonl` rows with a human marker in `labeler`) found
+only 177/200 instead of the expected 200. Cause: the 30-case blind pass had only ever
+been used to compute the human-vs-AI kappa above -- it was never merged back into
+`golden.jsonl` itself, so the 23 cases in that subset not also in the 43-case
+adjudication still held pure-AI values in the master file even though Varun had
+genuinely labeled them. Fixed by merging those 23 decisions in before finalizing
+anything -- see `REPORT.md` decision log #20.
+
 ## Current disclosure
 
-43/200 (21.5%) of the golden labels reflect a genuine human decision by Varun, each
-with a case-specific written rationale in `data/human_adjudication_43cases.csv`. The
-remaining 157/200 are AI-labeled, confirmed only by agreement between two independent
-AI passes -- not individually verified by a human. Separately, a fully independent
-30-case human relabel gives a genuine (not adjudication-conditioned) human-vs-AI
-agreement figure of 80%/kappa ~0.7. Together, this is real, disclosed progress toward
-"hand-labeled by the candidate," though it stops short of every one of the 200 labels
-being independently human-verified -- see `REPORT.md` section 5, item 1, for what a
-further week would add.
+**All 200/200 golden labels now carry a genuine human decision** by Varun, but at three
+different review depths, and that distinction matters more than the headline
+percentage:
+
+- **43/200 (21.5%)**: personally adjudicated after two AI passes disagreed or flagged
+  ambiguity, each with a case-specific written rationale
+  (`data/human_adjudication_43cases.csv`).
+- **30/200 (15%, 7 overlapping the above)**: independently blind-labeled from scratch,
+  no AI labels visible at all (`data/golden_human_blind_30.jsonl`) -- this is the only
+  subset that supports a genuine human-vs-AI Cohen's kappa (~0.7), since it's the only
+  one not conditioned on having already seen an AI answer.
+- **134/200 (67%)**: reviewed against an AI-consensus label and confirmed or corrected
+  (`data/human_review_remaining_134cases.csv`) -- a real decision, but an easier task
+  than blind labeling, and the 3/134 correction rate reflects that.
+
+This satisfies "hand-labeled examples you built yourself" in that every one of the 200
+labels reflects a human decision, but it is not the claim "all 200 were blind-labeled
+independently" -- only 15% of the set was. `REPORT.md` section 5, item 1, proposes the
+remaining honest gap: a second independent human, blind, on the same 30-case subset,
+to get a genuine human-vs-human kappa this project doesn't yet have.

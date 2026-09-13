@@ -96,13 +96,13 @@ be "grounded" in its own case's real historical answer.
 
 ## Golden evaluation set
 
-`data/golden.jsonl` -- 200 examples, stratified-sampled from the eval pool and labeled
-independently of any classifier's suggestion. Full sampling/labeling methodology,
-inter-rater agreement design, and an explicit disclosure about how these labels were
-produced are in `data/LABELING_GUIDE.md` and `data/LABELING_NOTES.md` -- **read that
-disclosure before treating these numbers as final**; it documents that automated
-labeling was used for scaffolding and that a human pass is still needed before
-submission.
+`data/golden.jsonl` -- 200 examples, stratified-sampled from the eval pool. Every one
+of the 200 labels carries a genuine human decision (43 personally adjudicated after an
+AI disagreement, 30 independently blind-labeled from scratch, 134 reviewed against an
+AI-consensus label and confirmed/corrected), but at three different review depths --
+**read `data/LABELING_GUIDE.md` before treating "200 hand-labeled" as one uniform
+claim**, since only the 30-case blind subset supports a genuine human-vs-AI agreement
+number. `data/LABELING_NOTES.md` has the rubric and hard-case notes.
 
 ## Decision log
 

@@ -61,16 +61,20 @@ All numbers are on the full 200-case golden set (`reports/metrics.json`).
 | Tier | Intent accuracy | Intent macro-F1 | Escalation accuracy | Escalation precision (escalate class) | Escalation recall (escalate class) | Escalation F1 (escalate class) | Mean judge score (1-5) |
 |---|---|---|---|---|---|---|---|
 | trivial | 4.5% | 0.011 | 75.5% | 0.0 | 0.0 | 0.0 | n/a (constant reply) |
-| simple (keyword) | 40.0% | 0.401 | 73.5% | 0.470 | 0.633 | 0.539 | 3.43 |
-| **llm (main)** | **81.5%** | **0.752** | **81.5%** | **0.630** | **0.592** | **0.611** | **3.86** |
+| simple (keyword) | 39.0% | 0.391 | 73.5% | 0.470 | 0.633 | 0.539 | 3.43 |
+| **llm (main)** | **80.5%** | **0.746** | **81.5%** | **0.630** | **0.592** | **0.611** | **3.86** |
 
-These numbers reflect the golden set *after* the human-adjudication pass described
-below (43/200 labels personally corrected) -- they moved from an earlier, less-reviewed
-77.5%/84.5%/0.627 to these figures. The movement is a byproduct of fixing ground truth,
-not of tuning the model, and it happened to go up here; it could just as easily have
-gone down, and the report would say so either way (see decision log #18). The main
-system roughly doubles the simple baseline's intent accuracy and macro-F1. Two numbers
-need immediate context, though (see "what's misleading" for the full list):
+These numbers reflect the golden set after **every one of the 200 labels received a
+genuine human decision** (see the inter-rater paragraph below and decision log #17/#18/#20
+for exactly how). The number moved twice as ground truth got more reviewed, each time as
+a byproduct of fixing labels, not tuning the model: 77.5% intent accuracy (single
+unreviewed AI pass) -> 81.5% (after the 43-case human adjudication) -> **80.5%** (after
+the remaining 157 cases also received a human decision -- 134 confirmed/corrected against
+AI consensus, 23 more merged in from the independent blind pass). It went up, then down
+slightly; the report says so either way, because that's the point of tracking this at
+all. The main system still roughly doubles the simple baseline's intent accuracy and
+macro-F1. Two numbers need immediate context, though (see "what's misleading" for the
+full list):
 
 - **Trivial's 75.5% escalation "accuracy" is a base-rate artifact**, not a capability:
   75.5% of the golden set is gold-labeled `auto_handle=true`, so a policy of "always
@@ -86,28 +90,34 @@ need immediate context, though (see "what's misleading" for the full list):
   below). Read `judge_mean_overall_score` as "the judge's opinion," not "reply quality"
   directly.
 
-**Inter-rater reliability, updated with genuine human data**: an independent blind
-second AI pass over the full 200-case golden set agreed with the original primary pass
-on 157/200 (78.5%) of cases (intent Cohen's kappa 0.799, escalation kappa 0.781 --
-`reports/ai_pass_agreement_full200.json`). The 43 disagreement/ambiguous cases were
-then personally adjudicated by Varun, each with a written case-specific rationale
-(`data/human_adjudication_43cases.csv`); this is what changed the headline numbers
-above. Separately, Varun independently blind-labeled a 30-case subset from scratch, no
-AI labels visible (`data/golden_human_blind_30.jsonl`) -- giving this project's first
-genuine **human-vs-AI** Cohen's kappa: 80% exact / kappa 0.69 against the original
-primary AI labels, and 80% exact / kappa 0.70 against an older, independently-generated
-30-case AI pass (`reports/human_vs_ai_agreement.json`). Both land close to the AI-vs-AI
-agreement rate itself (78.5%/157 of 200), which is a genuinely reassuring result: an
+**Inter-rater reliability, and how the golden set became 200/200 human-reviewed**: an
+independent blind second AI pass over the full 200-case golden set agreed with the
+original primary pass on 157/200 (78.5%) of cases (intent Cohen's kappa 0.799,
+escalation kappa 0.781 -- `reports/ai_pass_agreement_full200.json`). From there, every
+label got a human decision through three different review depths (full breakdown in
+`data/LABELING_GUIDE.md`): (1) the 43 disagreement/ambiguous cases were personally
+adjudicated by Varun with a written case-specific rationale each
+(`data/human_adjudication_43cases.csv`); (2) a 30-case subset was independently
+blind-labeled from scratch, no AI labels visible at all
+(`data/golden_human_blind_30.jsonl`, 7 of these overlap with the 43); (3) the remaining
+134 cases were reviewed against the AI consensus label (both AI passes had already
+agreed on these) and confirmed or corrected, each with a specific written reason
+(`data/human_review_remaining_134cases.csv` -- 131 confirmed, 3 corrected). The blind
+30-case pass also gives this project's only genuine **human-vs-AI** Cohen's kappa,
+computed before those labels were merged into the master set: 80% exact / kappa 0.69
+against the original primary AI labels, and 80% exact / kappa 0.70 against an older,
+independently-generated 30-case AI pass (`reports/human_vs_ai_agreement.json`). Both
+land close to the AI-vs-AI agreement rate itself (78.5%), a reassuring result -- an
 independent human disagrees with this project's AI labeling about as often as two AI
-passes disagree with each other, not more. **One anomaly is disclosed rather than used**:
-this same human labeling agreed 100% (30/30, both fields) with a *third* AI pass
-(`data/ai_blind_secondpass_full200.jsonl`) -- a rate inconsistent with the ~80%
-agreement against the other two independent AI passes on the identical 30 cases, and
-higher than a genuinely blind human labeler would be expected to produce by chance. That
-comparison is excluded from the reported kappa above for exactly this reason (see
-decision log #18). **Judge-vs-human agreement**, now genuine, on the 40-case calibration
-subset: 40% exact match, 77.5% within one point, quadratic-weighted kappa 0.32 ("fair"),
-Spearman rho 0.37 -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
+passes disagree with each other, not more. **One anomaly is disclosed rather than
+used**: that same 30-case blind pass also agreed 100% (30/30, both fields) with a
+*third* AI pass (`data/ai_blind_secondpass_full200.jsonl`) -- a rate inconsistent with
+the ~80% agreement against the other two independent AI passes on the identical 30
+cases. That comparison is excluded from the reported kappa above for exactly this
+reason (see decision log #18). **Judge-vs-human agreement**, genuine, on the 40-case
+calibration subset: 40% exact match, 77.5% within one point, quadratic-weighted kappa
+0.32 ("fair"), Spearman rho 0.37 -- see #4 below. Full methodology:
+`data/LABELING_GUIDE.md`.
 
 ## 3. Failure analysis (top 5, with real examples)
 
@@ -137,7 +147,7 @@ Spearman rho 0.37 -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
    and the escalation gate should not be trusted to catch this failure mode as built.
 3. **`software_bug_after_update` vs. `hardware_malfunction` confusion**, exactly as
    predicted from the golden-set labeling notes. The confusion matrix
-   (`reports/metrics.json`) shows 5 of 96 true `software_bug_after_update` cases
+   (`reports/metrics.json`) shows 5 of 94 true `software_bug_after_update` cases
    predicted as `hardware_malfunction` -- the largest single confusion cell. Example
    (case `1835143`): *"iPhone 6s+ turned into Headphone mode, no headphone inserted, BT
    off, restart didnt help. Speaker works in phone calls."* -- no update mentioned, so
@@ -176,33 +186,37 @@ Spearman rho 0.37 -- see #4 below. Full methodology: `data/LABELING_GUIDE.md`.
 
 This section is mandatory, and here is the honest list for this project:
 
-1. **81.5% intent accuracy is not a traffic-weighted number.** Golden-set sampling was
+1. **80.5% intent accuracy is not a traffic-weighted number.** Golden-set sampling was
    deliberately capped at 35/stratum (by keyword-predicted intent) specifically to avoid
    the keyword baseline's catch-all bucket dominating the set (see
    `scripts/02_sample_golden.py`). The corrected gold labels ended up concentrated in
-   `software_bug_after_update` anyway (96/200 = 48%) -- which the `llm` tier handles
-   well (84/96 = 87.5% recall on that class per the confusion matrix) -- so the headline
+   `software_bug_after_update` anyway (94/200 = 47%) -- which the `llm` tier handles
+   well (82/94 = 87.2% recall on that class per the confusion matrix) -- so the headline
    number is somewhat flattered by the golden set's actual composition, not purely by
    sampling design. A traffic-weighted number, if the true intent mix differs from this
    golden set's, could look meaningfully different.
-2. **157/200 (78.5%) of the golden labels are still AI-labeled, confirmed only by
-   agreement between two independent AI passes -- not individually verified by a
-   human.** The other 43/200 (21.5%) reflect Varun's own adjudication, each with a
-   written case-specific rationale (`data/human_adjudication_43cases.csv`), made after
-   seeing where the two AI passes disagreed or flagged ambiguity. This is real progress
-   over a single unreviewed AI pass (it directly changed the headline numbers in section
-   2), but it is not the same claim as "every one of the 200 labels was independently
-   hand-built." A separate, from-scratch, blind human relabel of a 30-case subset
-   (`data/golden_human_blind_30.jsonl`, no AI labels visible while labeling) gives a
-   genuine human-vs-AI comparison: 80% exact / kappa 0.69-0.70 against two independently-
-   generated AI passes on the same 30 cases -- reassuringly close to the 78.5% AI-vs-AI
-   agreement rate itself, suggesting the rubric produces reasonably consistent judgments
-   whether an AI or a human applies it. **One important caveat on that same 30-case
-   file**: it also showed 100% (30/30) agreement against a *third* AI pass, a rate
-   inconsistent with its ~80% agreement against the other two AI passes on the identical
-   cases. That specific comparison is disclosed but excluded from the reported kappa
-   above, since a rate that anomalous is more likely to reflect some non-independence in
-   how that file was produced than genuine blind labeling -- see decision log #18.
+2. **Every one of the 200 golden labels now carries a genuine human decision, but not
+   all at the same review depth -- read the breakdown before treating this as one
+   uniform claim.** 43/200 (21.5%) were personally adjudicated case-by-case after two AI
+   passes disagreed or flagged ambiguity (`data/human_adjudication_43cases.csv`); 30/200
+   (with 7 overlapping the 43) were independently blind-labeled from scratch with no AI
+   labels visible at all (`data/golden_human_blind_30.jsonl`); the remaining 134/200 were
+   reviewed against an AI-consensus label (both independent AI passes had already agreed)
+   and confirmed or corrected -- 131 confirmed, 3 corrected
+   (`data/human_review_remaining_134cases.csv`). That last category is a real human
+   decision with a specific written reason per case, but it is *review-of-a-suggestion*,
+   not blind labeling -- a materially easier task than the 30-case blind pass, and the
+   low 3/134 correction rate should be read in that light rather than as "97.8% of AI
+   labels were already perfect." The one genuinely blind human-vs-AI comparison in this
+   project (the 30-case subset, scored *before* being merged into the master set) gives
+   80% exact / kappa 0.69-0.70 against two independently-generated AI passes -- reassuringly
+   close to the 78.5% AI-vs-AI agreement rate itself, but that comparison covers 15% of
+   the golden set, not all of it. **One important caveat on that same 30-case file**: it
+   also showed 100% (30/30) agreement against a *third* AI pass, a rate inconsistent with
+   its ~80% agreement against the other two AI passes on the identical cases. That
+   specific comparison is disclosed but excluded from the reported kappa above, since a
+   rate that anomalous is more likely to reflect some non-independence in how that file
+   was produced than genuine blind labeling -- see decision log #18.
 3. **The judge-human agreement numbers are now genuine** (`reports/judge_calibration_template.jsonl`'s
    `human_overall_score_1to5` was scored by Varun, blind to the judge's own scores --
    `data/REVIEW_3_blind_40_judge.csv`). Result: a fair-not-good kappa (0.32) and a
@@ -240,15 +254,17 @@ This section is mandatory, and here is the honest list for this project:
 
 ## 5. What I'd do next with one more week
 
-1. **Extend genuine human labeling beyond the current 30+43/200.** A blind 30-case
-   human relabel and a genuine 40-case human judge-calibration pass are now done (see
-   section 2 and decision log #18), and 43/200 golden labels are human-adjudicated, but
-   157/200 golden labels are still only AI-confirmed-by-agreement. Getting a second
-   independent human to relabel a larger, disjoint subset -- ideally the same 30 cases,
-   to get a genuine human-vs-human kappa as well -- would resolve the one open question
-   this report can't yet answer: whether the ~80% AI-vs-human agreement reflects the AI
-   converging on the right answer, or two different-but-equally-plausible readings of
-   ambiguous rubric edge cases.
+1. **Get a genuine human-vs-human kappa, not just human-vs-AI.** All 200 golden labels
+   now carry a human decision (decision log #17/#18/#20), and the 30-case blind subset
+   gives a real human-vs-AI kappa (~0.69-0.70), but every human decision in this project
+   was made by one person (Varun) working from one rubric. A second independent human
+   relabeling the same 30-case subset, blind to both the AI labels and Varun's labels,
+   would answer the one open question this report can't yet answer: whether that ~80%
+   agreement reflects the AI converging on the right answer, or two different-but-
+   equally-plausible readings of ambiguous rubric edge cases that a second human might
+   also disagree with. It would also stress-test whether the 134-case "review a
+   consensus label" pass (materially easier than blind labeling, see "what's misleading"
+   #2) would have looked different if done blind instead.
 2. **Fix the "confident but wrong" auto-handle gap (failure mode #2)**, the report's
    biggest finding: add a lightweight faithfulness check between the drafted reply and
    its retrieved evidence (e.g. NLI-style entailment, or a second cheap LLM call asking
@@ -431,3 +447,18 @@ This section is mandatory, and here is the honest list for this project:
     redaction pipeline, multi-language routing infra) were left out of "what I'd do
     next" as out of scope for a take-home's one-week horizon rather than incorporated,
     to avoid turning an evaluation project into an open-ended platform build.
+20. **The remaining 157/200 golden labels were also brought to a genuine human
+    decision, closing the golden set to 200/200 -- and a process bug in doing so was
+    caught by my own sanity check and fixed before being reported.** The 134 cases
+    where both AI passes had already agreed were reviewed by Varun against that
+    consensus label, each with a specific written reason -- 131 confirmed, 3 corrected
+    (`data/human_review_remaining_134cases.csv`). While wiring this in, a sanity check
+    (counting rows with a human marker in their `labeler` field) found only 177/200
+    instead of the expected 200/200: the 30-case blind-labeling pass had only ever been
+    used to compute the human-vs-AI kappa in decision log #18, never merged back into
+    `golden.jsonl` itself, so the 23 cases in that subset that weren't also in the
+    43-case adjudication still held pure-AI values. Fixed by merging those 23 decisions
+    into the master set before recomputing anything. Net effect on headline numbers:
+    intent accuracy moved from 81.5% to 80.5%, escalation numbers unchanged (see section
+    2's revised table) -- disclosed as a further, real shift from more ground-truth
+    review, not something to chase back upward.
